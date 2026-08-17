@@ -84,7 +84,8 @@
     "ios": "expo run:ios",
     "lint": "expo lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test": "node --test --experimental-strip-types 'src/**/*.test.ts'"
   },
   "private": true,
   "resolutions": {
