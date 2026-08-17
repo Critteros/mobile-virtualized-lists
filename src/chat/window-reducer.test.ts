@@ -143,6 +143,32 @@ test('append adds to the newer end and never trims', () => {
   assert.equal(state.items[40].id, CORPUS[999].id);
 });
 
+test('loadFail clears the loading flag for its edge and leaves everything else untouched', () => {
+  let state = reset(page(500, 40));
+  state = windowReducer(state, { type: 'loadStart', edge: 'older' });
+  state = windowReducer(state, { type: 'loadStart', edge: 'newer' });
+  const before = state;
+  state = windowReducer(state, { type: 'loadFail', edge: 'older' });
+  assert.equal(state.loadingOlder, false);
+  assert.equal(state.loadingNewer, true);
+  assert.equal(state.items, before.items);
+  assert.equal(state.hasOlder, before.hasOlder);
+  assert.equal(state.hasNewer, before.hasNewer);
+});
+
+test('loadFail with a stale generation is discarded', () => {
+  let state = reset(page(500, 40));
+  state = windowReducer(state, { type: 'loadStart', edge: 'older' });
+  const before = state;
+  const stale = windowReducer(state, {
+    type: 'loadFail',
+    edge: 'older',
+    generation: before.generation - 1,
+  });
+  assert.equal(stale.loadingOlder, true);
+  assert.equal(stale, before, 'a stale loadFail must return the identical state object, not a copy');
+});
+
 test('a stale load for a superseded generation is ignored', () => {
   const first = reset(page(500, 40));
   const second = windowReducer(first, { type: 'reset', items: page(0, 40), hasOlder: false, hasNewer: true });

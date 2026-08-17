@@ -26,7 +26,13 @@ export type WindowAction =
       generation?: number;
     }
   | { type: 'reset'; items: Message[]; hasOlder: boolean; hasNewer: boolean }
-  | { type: 'append'; message: Message };
+  | { type: 'append'; message: Message }
+  | {
+      type: 'loadFail';
+      edge: WindowEdge;
+      /** When present and stale, the action is discarded. */
+      generation?: number;
+    };
 
 export const initialWindowState: WindowState = {
   generation: 0,
@@ -118,6 +124,16 @@ export function windowReducer(state: WindowState, action: WindowAction): WindowS
 
     case 'append':
       return { ...state, items: [...state.items, action.message] };
+
+    case 'loadFail': {
+      if (action.generation !== undefined && action.generation !== state.generation) {
+        return state;
+      }
+
+      return action.edge === 'older'
+        ? { ...state, loadingOlder: false }
+        : { ...state, loadingNewer: false };
+    }
 
     default:
       return state;

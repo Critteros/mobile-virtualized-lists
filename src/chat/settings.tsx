@@ -34,11 +34,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<ChatSettings>(DEFAULT_SETTINGS);
 
   const update = useCallback((patch: Partial<ChatSettings>) => {
-    setSettings((current) => {
-      const next = { ...current, ...patch };
-      if (patch.latencyMs !== undefined) setLatency(patch.latencyMs);
-      return next;
-    });
+    if (patch.latencyMs !== undefined) setLatency(patch.latencyMs);
+    setSettings((current) => ({ ...current, ...patch }));
   }, []);
 
   const value = useMemo(() => ({ settings, update }), [settings, update]);

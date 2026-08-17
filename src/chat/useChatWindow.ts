@@ -31,11 +31,9 @@ export function useChatWindow(db: SQLiteDatabase | null): ChatWindow {
   const [state, dispatch] = useReducer(windowReducer, initialWindowState);
   const [targetIndex, setTargetIndex] = useState(0);
 
-  // Mirrors of reducer state, so callbacks stay stable and never fire twice
-  // for the same edge while a request is in flight.
+  // Mirrors which edges have a request in flight, so callbacks stay stable
+  // and never fire twice for the same edge concurrently.
   const inFlight = useRef({ newer: false, older: false });
-  const generation = useRef(0);
-  generation.current = state.generation;
 
   const load = useCallback(
     async (edge: 'newer' | 'older') => {
@@ -48,7 +46,7 @@ export function useChatWindow(db: SQLiteDatabase | null): ChatWindow {
       if (edge === 'newer' && !state.hasNewer) return;
 
       inFlight.current[edge] = true;
-      const requestGeneration = generation.current;
+      const requestGeneration = state.generation;
       dispatch({ type: 'loadStart', edge });
 
       try {
@@ -65,11 +63,22 @@ export function useChatWindow(db: SQLiteDatabase | null): ChatWindow {
           trimCap: settings.trimCap,
           generation: requestGeneration,
         });
+      } catch (error) {
+        console.warn(`[useChatWindow] load(${edge}) failed:`, error);
+        dispatch({ type: 'loadFail', edge, generation: requestGeneration });
       } finally {
         inFlight.current[edge] = false;
       }
     },
-    [db, settings.pageSize, settings.trimCap, state.hasNewer, state.hasOlder, state.items],
+    [
+      db,
+      settings.pageSize,
+      settings.trimCap,
+      state.generation,
+      state.hasNewer,
+      state.hasOlder,
+      state.items,
+    ],
   );
 
   const loadOlder = useCallback(() => {
