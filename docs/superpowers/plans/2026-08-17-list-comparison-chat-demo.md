@@ -3543,13 +3543,11 @@ For each of the eight variants (six if v1 was dropped), with `describe` before e
 8. Set jump mode to imperative; repeat steps 4–6.
 9. Take a `screenshot` at the end of each variant.
 
-- [ ] **Step 4: Sweep on Android**
+- [ ] **Step 4: Android is out of scope**
 
-```bash
-yarn android
-```
+No Android sweep. The user scoped this exercise to iOS only, and `list-devices` reports no AVDs on this machine. Do not run `yarn android`, do not create an emulator, and do not download a system image.
 
-Repeat Step 3 on the Android emulator. Watch specifically for the documented `expo-video` single-`VideoView` behaviour and for any FlashList v1 native differences.
+`android/` is still generated and `expo prebuild` still runs, so the project builds for Android for anyone who wants it later — it is simply not exercised here. Record that in `findings.md` rather than leaving it implied.
 
 - [ ] **Step 5: Write up the findings**
 
