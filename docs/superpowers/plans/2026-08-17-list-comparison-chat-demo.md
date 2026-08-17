@@ -400,7 +400,7 @@ git commit -m "feat: add seeded PRNG and monotonic UUIDv7 generation"
   - `type MessageKind = 'text' | 'image' | 'video'`
   - `SEED`, `MESSAGE_COUNT`, `CORPUS_START_TS` constants
   - `generateCorpus(count?: number, seed?: number): Message[]`
-  - `generateCorpusInto(count: number, seed: number, sink: (m: Message) => void): void` — streaming form, used by seeding so 100k rows are never all in memory at once.
+  - `generateCorpusIter(count: number, seed: number): Generator<Message>` — streaming form, used by seeding so 100k rows are never all in memory at once. It is a generator rather than a callback sink specifically so the consumer can `await` a database flush between batches; a synchronous sink cannot be awaited, which would force the seeder to buffer the whole corpus first.
 
 - [ ] **Step 1: Write the types**
 
@@ -439,7 +439,7 @@ Create `src/chat/generator.test.ts`:
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CORPUS_START_TS, generateCorpus, generateCorpusInto, SEED } from './generator.ts';
+import { CORPUS_START_TS, generateCorpus, generateCorpusIter, SEED } from './generator.ts';
 
 test('generateCorpus is deterministic', () => {
   assert.deepEqual(generateCorpus(500, SEED), generateCorpus(500, SEED));
@@ -503,9 +503,8 @@ test('about 40% of messages are from me', () => {
   assert.ok(Math.abs(mine - 0.4) < 0.02, `mine share ${mine}`);
 });
 
-test('generateCorpusInto emits the same rows as generateCorpus', () => {
-  const streamed: unknown[] = [];
-  generateCorpusInto(300, SEED, (m) => streamed.push(m));
+test('generateCorpusIter yields the same rows as generateCorpus', () => {
+  const streamed = [...generateCorpusIter(300, SEED)];
   assert.deepEqual(streamed, generateCorpus(300, SEED));
 });
 ```
@@ -585,13 +584,12 @@ function buildBody(rng: () => number): string {
 
 /**
  * Streams the corpus so seeding never holds 100k objects at once.
- * Rows are emitted oldest first, with strictly increasing timestamps.
+ * Rows are yielded oldest first, with strictly increasing timestamps.
+ *
+ * A generator rather than a callback sink: the seeder has to await a database
+ * flush every few thousand rows, and a synchronous sink cannot be awaited.
  */
-export function generateCorpusInto(
-  count: number,
-  seed: number,
-  sink: (message: Message) => void,
-): void {
+export function* generateCorpusIter(count: number, seed: number): Generator<Message> {
   const rng = mulberry32(seed);
   const nextId = createIdFactory(mulberry32(seed ^ 0x5f3759df));
   let cursor = CORPUS_START_TS;
@@ -605,11 +603,11 @@ export function generateCorpusInto(
     const author = rng() < 0.4 ? 0 : 1 + Math.floor(rng() * 3);
 
     if (kind === 'text') {
-      sink({
+      yield {
         id, ts, author, kind,
         body: buildBody(rng),
         mediaUrl: null, posterUrl: null, mediaW: null, mediaH: null,
-      });
+      };
       continue;
     }
 
@@ -620,33 +618,31 @@ export function generateCorpusInto(
       // out until the image loads, which is the post-load height change every
       // engine has to cope with.
       const known = rng() < 0.5;
-      sink({
+      yield {
         id, ts, author, kind,
         body: null,
         mediaUrl: `https://picsum.photos/seed/${id}/${width}/${height}`,
         posterUrl: null,
         mediaW: known ? width : null,
         mediaH: known ? height : null,
-      });
+      };
       continue;
     }
 
-    sink({
+    yield {
       id, ts, author, kind,
       body: null,
       mediaUrl: VIDEO_URLS[i % VIDEO_URLS.length],
       posterUrl: `https://picsum.photos/seed/${id}/${VIDEO_W}/${VIDEO_H}`,
       mediaW: VIDEO_W,
       mediaH: VIDEO_H,
-    });
+    };
   }
 }
 
 /** Convenience wrapper for tests and small corpora. */
 export function generateCorpus(count = MESSAGE_COUNT, seed = SEED): Message[] {
-  const rows: Message[] = [];
-  generateCorpusInto(count, seed, (m) => rows.push(m));
-  return rows;
+  return [...generateCorpusIter(count, seed)];
 }
 ```
 
@@ -936,7 +932,7 @@ git commit -m "feat: add cursor pagination SQL with real-sqlite tests"
 - Create: `src/chat/db.ts`
 
 **Interfaces:**
-- Consumes: `sql.ts` exports, `generateCorpusInto`, `MESSAGE_COUNT`, `SEED` from `./generator.ts`, `createIdFactory` from `./uuidv7.ts`.
+- Consumes: `sql.ts` exports, `generateCorpusIter`, `MESSAGE_COUNT`, `SEED`, `CORPUS_START_TS` from `./generator.ts`, `createIdFactory` from `./uuidv7.ts`.
 - Produces:
   - `openChatDb(): Promise<SQLiteDatabase>`
   - `ensureSeeded(db: SQLiteDatabase, onProgress: (done: number, total: number) => void): Promise<void>`
@@ -963,7 +959,7 @@ Create `src/chat/db.ts`:
 import { Paths } from 'expo-file-system';
 import * as SQLite from 'expo-sqlite';
 
-import { CORPUS_START_TS, generateCorpusInto, MESSAGE_COUNT, SEED } from './generator';
+import { CORPUS_START_TS, generateCorpusIter, MESSAGE_COUNT, SEED } from './generator';
 import {
   CREATE_MESSAGES,
   CREATE_META,
@@ -1047,10 +1043,10 @@ async function seed(db: SQLite.SQLiteDatabase, onProgress: SeedProgress): Promis
       onProgress(done, MESSAGE_COUNT);
     };
 
-    const queued: Message[] = [];
-    generateCorpusInto(MESSAGE_COUNT, SEED, (m) => queued.push(m));
-
-    for (const message of queued) {
+    // Driving the generator directly is the point: the flush is awaited
+    // inside the loop, so peak memory is one batch rather than the whole
+    // 100k-row corpus.
+    for (const message of generateCorpusIter(MESSAGE_COUNT, SEED)) {
       batch.push(message);
       if (batch.length >= BATCH_SIZE) {
         await flush();
@@ -2137,7 +2133,7 @@ git commit -m "feat: add variant menu, seeding gate and chat route"
 The first working chat screen. Text bubbles only; media arrives in Task 11.
 
 **Files:**
-- Create: `src/engines/FlatListChat.tsx`, `src/chat/MessageRow.tsx`
+- Create: `src/engines/FlatListChat.tsx`, `src/chat/MessageRow.tsx`, `src/chat/day-boundary.ts`, `src/chat/day-boundary.test.ts`
 - Modify: `src/chat/types.ts`, `src/screens/ChatScreen.tsx`
 
 **Interfaces:**
@@ -2150,7 +2146,7 @@ The first working chat screen. Text bubbles only; media arrives in Task 11.
 
 - [ ] **Step 1: Add the engine contract to `chat/types.ts`**
 
-Append:
+The `import` line goes at the **top** of the file; the type declarations are appended after the existing `Message` type.
 
 ```ts
 import type { ReactElement, Ref } from 'react';
@@ -2183,7 +2179,7 @@ export type ChatListProps = {
 
 - [ ] **Step 2: Write the failing day-boundary test**
 
-Create `src/chat/message-row.test.ts`:
+Create `src/chat/day-boundary.test.ts`:
 
 ```ts
 import assert from 'node:assert/strict';
@@ -2515,7 +2511,7 @@ Then go back and repeat for **Normal + MVCP**, watching specifically whether the
 - [ ] **Step 10: Check diagnostics and commit**
 
 ```bash
-git add src/chat/types.ts src/chat/day-boundary.ts src/chat/message-row.test.ts src/chat/MessageRow.tsx src/engines/FlatListChat.tsx src/screens/ChatScreen.tsx
+git add src/chat/types.ts src/chat/day-boundary.ts src/chat/day-boundary.test.ts src/chat/MessageRow.tsx src/engines/FlatListChat.tsx src/screens/ChatScreen.tsx
 git commit -m "feat: add message rows, chat screen and FlatList engine"
 ```
 
@@ -2525,7 +2521,7 @@ git commit -m "feat: add message rows, chat screen and FlatList engine"
 
 **Files:**
 - Create: `src/chat/VideoProvider.tsx`
-- Modify: `src/chat/MessageRow.tsx`, `src/screens/ChatScreen.tsx`, `src/App.tsx`
+- Modify: `src/chat/MessageRow.tsx`, `src/screens/ChatScreen.tsx`
 
 **Interfaces:**
 - Consumes: `expo-image`, `expo-video`.
