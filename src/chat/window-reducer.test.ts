@@ -25,6 +25,21 @@ test('loadStart flags only its own edge', () => {
   assert.equal(state.loadingNewer, false);
 });
 
+test('loadEnd clears only its own edge, leaving the other edge loading', () => {
+  let state = reset(page(500, 40));
+  state = windowReducer(state, { type: 'loadStart', edge: 'older' });
+  state = windowReducer(state, { type: 'loadStart', edge: 'newer' });
+  state = windowReducer(state, {
+    type: 'loadEnd',
+    edge: 'older',
+    page: page(460, 40),
+    pageSize: 40,
+    trimCap: null,
+  });
+  assert.equal(state.loadingOlder, false);
+  assert.equal(state.loadingNewer, true);
+});
+
 test('grow-only prepends older pages without dropping anything', () => {
   let state = reset(page(500, 40));
   for (let i = 1; i <= 5; i++) {
@@ -110,6 +125,17 @@ test('trimming never empties the window', () => {
   assert.ok(state.items.length >= 40, `window collapsed to ${state.items.length}`);
 });
 
+test('trimming never drops the window below one page, even when misaligned', () => {
+  const state = windowReducer(reset(page(500, 45)), {
+    type: 'loadEnd',
+    edge: 'newer',
+    page: page(545, 40),
+    pageSize: 40,
+    trimCap: 5,
+  });
+  assert.ok(state.items.length >= 40, `window fell to ${state.items.length}`);
+});
+
 test('append adds to the newer end and never trims', () => {
   const base = reset(page(500, 40), true, false);
   const state = windowReducer(base, { type: 'append', message: CORPUS[999] });
@@ -129,4 +155,5 @@ test('a stale load for a superseded generation is ignored', () => {
     generation: first.generation,
   });
   assert.deepEqual(stale.items, second.items);
+  assert.equal(stale, second, 'a stale loadEnd must return the identical state object, not a copy');
 });

@@ -50,7 +50,7 @@ function trim(
 ): { dropped: boolean; items: Message[] } {
   let next = items;
   let dropped = false;
-  while (next.length > cap && next.length > pageSize) {
+  while (next.length > cap && next.length - pageSize >= pageSize) {
     next = dropFrom === 'older' ? next.slice(pageSize) : next.slice(0, next.length - pageSize);
     dropped = true;
   }
@@ -64,7 +64,7 @@ export function windowReducer(state: WindowState, action: WindowAction): WindowS
         generation: state.generation + 1,
         hasNewer: action.hasNewer,
         hasOlder: action.hasOlder,
-        items: action.items,
+        items: [...action.items],
         loadingNewer: false,
         loadingOlder: false,
       };
