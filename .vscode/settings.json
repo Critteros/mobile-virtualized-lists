@@ -3,5 +3,14 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
-  }
+  },
+  "files.associations": {
+     "*.css": "tailwindcss",
+     "*.scss": "tailwindcss",
+   },
+   "tailwindCSS.classAttributes": [
+      "class",
+      "className",
+      "headerClassName"
+   ]
 }
