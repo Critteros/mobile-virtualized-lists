@@ -5,12 +5,8 @@
     "source.sortMembers": "explicit"
   },
   "files.associations": {
-     "*.css": "tailwindcss",
-     "*.scss": "tailwindcss",
-   },
-   "tailwindCSS.classAttributes": [
-      "class",
-      "className",
-      "headerClassName"
-   ]
+    "*.css": "tailwindcss",
+    "*.scss": "tailwindcss"
+  },
+  "tailwindCSS.classAttributes": ["class", "className", "headerClassName"]
 }
