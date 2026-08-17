@@ -4,15 +4,15 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~57.0.11",
-    "expo": "~57.0.14",
-    "expo-constants": "~57.0.12",
+    "expo": "~57.0.0",
+    "expo-constants": "~57.0.0",
     "expo-device": "~57.0.1",
     "expo-font": "~57.0.1",
     "expo-glass-effect": "~57.0.1",
     "expo-image": "~57.0.3",
     "expo-linking": "~57.0.6",
-    "expo-router": "~57.0.14",
-    "expo-splash-screen": "~57.0.7",
+    "expo-router": "~57.0.0",
+    "expo-splash-screen": "~57.0.0",
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.2",
     "expo-system-ui": "~57.0.2",
@@ -39,5 +39,6 @@
     "web": "expo start --web",
     "lint": "expo lint"
   },
-  "private": true
+  "private": true,
+  "packageManager": "yarn@4.18.0+sha512.fcb8716fe7cd0eece141ffc18b92193a9df9204c1ba83189c288835223fc0bbe64af473bab0d5e9927a7daeb5caf2bb07eb2787cc9338ca040ea125f2a1f2f7e"
 }
