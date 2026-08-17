@@ -1,7 +1,7 @@
 import { Paths } from 'expo-file-system';
 import * as SQLite from 'expo-sqlite';
 
-import { CORPUS_START_TS, generateCorpusIter, MESSAGE_COUNT, SEED } from './generator';
+import { generateCorpusIter, MESSAGE_COUNT, SEED } from './generator';
 import {
   CREATE_MESSAGES,
   CREATE_META,
@@ -9,6 +9,7 @@ import {
   INSERT_MESSAGE,
   insertParams,
   mapRow,
+  PRAGMA_WAL_MODE,
   SELECT_BOUNDS,
   SELECT_BY_ID,
   SELECT_FIRST_PAGE,
@@ -21,7 +22,7 @@ import {
   type MessageRow,
 } from './sql';
 import type { Message } from './types';
-import { createIdFactory } from './uuidv7';
+import { createIdFactory, timestampFromUuidv7 } from './uuidv7';
 
 export type SeedProgress = (done: number, total: number) => void;
 
@@ -55,7 +56,7 @@ function withLatency<T>(run: () => Promise<T>): Promise<T> {
  */
 export async function openChatDb(): Promise<SQLite.SQLiteDatabase> {
   const db = await SQLite.openDatabaseAsync(DATABASE_NAME, undefined, Paths.cache.uri);
-  await db.execAsync('PRAGMA journal_mode = WAL');
+  await db.execAsync(PRAGMA_WAL_MODE);
   await db.execAsync(CREATE_META);
   await db.execAsync(CREATE_MESSAGES);
   return db;
@@ -188,16 +189,17 @@ export function getBounds(
   });
 }
 
-/**
- * Outgoing messages use wall-clock time. The corpus starts at CORPUS_START_TS
- * and always ends well before today, so a fresh id sorts after every seeded
- * one; the guard keeps that true even if the corpus constants change.
- */
+/** Outgoing messages use wall-clock time. */
 const nextOutgoingId = createIdFactory(() => Math.random());
 
 export async function insertOutgoing(db: SQLite.SQLiteDatabase, body: string): Promise<Message> {
-  const { count } = await getBounds(db);
-  const { id, ts } = nextOutgoingId(Math.max(Date.now(), CORPUS_START_TS + count + 1));
+  const bounds = await getBounds(db);
+  // Ids are the sole cursor, so an outgoing message must sort after every
+  // seeded row. The corpus is historical, so wall-clock time normally wins;
+  // deriving the floor from the newest persisted id keeps that true even on a
+  // device with a wrong clock, or if the corpus constants ever move.
+  const floor = bounds.maxId === null ? Date.now() : timestampFromUuidv7(bounds.maxId) + 1;
+  const { id, ts } = nextOutgoingId(Math.max(Date.now(), floor));
   const message: Message = {
     id,
     ts,

@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS messages (
 
 export const CREATE_META = `CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)`;
 
+export const PRAGMA_WAL_MODE = `PRAGMA journal_mode = WAL`;
+
 export const DROP_MESSAGES = `DROP TABLE IF EXISTS messages`;
 
 export const INSERT_MESSAGE = `INSERT INTO messages (id, ts, author, kind, body, media_url, poster_url, media_w, media_h) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { mulberry32 } from './random.ts';
-import { createIdFactory, uuidv7 } from './uuidv7.ts';
+import { createIdFactory, timestampFromUuidv7, uuidv7 } from './uuidv7.ts';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -31,6 +31,13 @@ test('uuidv7 encodes the timestamp in the leading 48 bits', () => {
 test('uuidv7 is deterministic for the same seed and timestamp', () => {
   const ts = Date.UTC(2024, 0, 1);
   assert.equal(uuidv7(ts, mulberry32(9)), uuidv7(ts, mulberry32(9)));
+});
+
+test('timestampFromUuidv7 recovers the timestamp uuidv7 encoded', () => {
+  const rng = mulberry32(11);
+  for (const ts of [0, 1, Date.UTC(2023, 0, 1), Date.UTC(2025, 6, 15, 19, 5, 54, 666), Date.now()]) {
+    assert.equal(timestampFromUuidv7(uuidv7(ts, rng)), ts);
+  }
 });
 
 test('createIdFactory forces strictly increasing timestamps', () => {

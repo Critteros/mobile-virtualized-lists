@@ -30,6 +30,11 @@ export function uuidv7(tsMs: number, rng: () => number): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+/** Recovers the millisecond timestamp UUIDv7 encodes in its leading 48 bits. */
+export function timestampFromUuidv7(id: string): number {
+  return Number.parseInt(id.replace(/-/g, '').slice(0, 12), 16);
+}
+
 /**
  * Wraps uuidv7 with the ordering invariant the cursor depends on: each call
  * returns a timestamp strictly greater than the previous one, so two messages
