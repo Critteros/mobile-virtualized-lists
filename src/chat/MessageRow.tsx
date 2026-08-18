@@ -1,13 +1,77 @@
-import { memo, type ReactElement } from 'react';
-import { View } from 'react-native';
+import { memo, useState, type ReactElement } from 'react';
+import { Pressable, View } from 'react-native';
+import { Image } from 'expo-image';
+import { VideoView } from 'expo-video';
 
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 
 import { isDayBoundary } from './day-boundary';
 import type { Message } from './types';
+import { useVideo } from './VideoProvider';
 
 const AUTHOR_NAMES = ['Me', 'Ada', 'Grace', 'Alan'];
+const BUBBLE_WIDTH = 240;
+
+function ImageBubble({ message }: { message: Message }) {
+  // Half the image rows arrive with unknown dimensions. Those start at a
+  // placeholder height and grow when the image reports its real size — the
+  // post-load height change every engine has to absorb.
+  const known = message.mediaW !== null && message.mediaH !== null;
+  const [ratio, setRatio] = useState<number | null>(
+    known ? message.mediaW! / message.mediaH! : null,
+  );
+
+  return (
+    <Image
+      source={{ uri: message.mediaUrl! }}
+      recyclingKey={message.id}
+      contentFit="cover"
+      transition={100}
+      onLoad={(event) => {
+        if (ratio === null) setRatio(event.source.width / event.source.height);
+      }}
+      style={{
+        width: BUBBLE_WIDTH,
+        height: ratio === null ? 80 : BUBBLE_WIDTH / ratio,
+        borderRadius: 12,
+      }}
+    />
+  );
+}
+
+function VideoBubble({ message }: { message: Message }) {
+  const { activeId, play, player } = useVideo();
+  const ratio = (message.mediaW ?? 16) / (message.mediaH ?? 9);
+  const height = BUBBLE_WIDTH / ratio;
+
+  if (activeId === message.id) {
+    return (
+      <VideoView
+        player={player}
+        nativeControls
+        contentFit="contain"
+        style={{ width: BUBBLE_WIDTH, height, borderRadius: 12 }}
+      />
+    );
+  }
+
+  return (
+    <Pressable onPress={() => play(message)}>
+      <Image
+        source={{ uri: message.posterUrl! }}
+        recyclingKey={message.id}
+        contentFit="cover"
+        style={{ width: BUBBLE_WIDTH, height, borderRadius: 12 }}
+      />
+      <View className="absolute inset-0 items-center justify-center">
+        <View className="h-12 w-12 items-center justify-center rounded-full bg-black/60">
+          <Text className="text-white">▶</Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
 
 function formatDay(ts: number): string {
   return new Date(ts).toLocaleDateString(undefined, {
@@ -54,15 +118,24 @@ function MessageRowImpl({ message, previous }: MessageRowProps): ReactElement {
 
         <View
           className={cn(
-            'max-w-[80%] rounded-2xl px-3 py-2',
+            'max-w-[80%] rounded-2xl',
+            message.kind === 'text' ? 'px-3 py-2' : 'p-1',
             mine ? 'rounded-br-sm bg-primary' : 'rounded-bl-sm bg-muted',
           )}>
-          {message.body ? (
+          {message.kind === 'text' ? (
             <Text className={cn(mine && 'text-primary-foreground')}>{message.body}</Text>
-          ) : null}
+          ) : message.kind === 'image' ? (
+            <ImageBubble message={message} />
+          ) : (
+            <VideoBubble message={message} />
+          )}
           <Text
             variant="muted"
-            className={cn('mt-1 text-[10px]', mine && 'text-primary-foreground/70')}>
+            className={cn(
+              'mt-1 text-[10px]',
+              mine && 'text-primary-foreground/70',
+              message.kind !== 'text' && 'px-2 pb-1',
+            )}>
             {formatTime(message.ts)}
           </Text>
         </View>
