@@ -1,56 +1,87 @@
-# Welcome to your Expo app 👋
+# Mobile virtualized lists — chat comparison
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This app compares virtualized list libraries on the hardest screen React Native
+has: a chat log. One corpus, one row component, one pagination model. Only the
+list engine changes between variants, so what you see is the engine.
 
-## Get started
+## What it tests
 
-1. Install dependencies
+A chat list must do four things at once, and each one breaks a different list:
 
-   ```bash
-   npm install
-   ```
+- **Open in the middle.** A jump to an old message must land on that message, not
+  near it.
+- **Paginate at both ends.** Older messages prepend, newer messages append.
+  A prepend must not move the content under your finger.
+- **Absorb rows that change height.** Half the image rows carry no dimensions, so
+  they grow after the picture loads.
+- **Stay anchored at the newest message** while you sit at the live tail.
 
-2. Start the app
+The corpus is 100,000 generated messages in SQLite: text of four length classes,
+images, videos, day separators, and bursty timestamps. A seeded generator builds
+it, so every engine sees the same data in the same order. Database reads run
+through an adjustable delay, because a real chat waits on a network.
 
-   ```bash
-   npx expo start
-   ```
+## Variants
 
-In the output, you'll find options to open the app in a
+| Engine                  | Variants                                                  |
+| ----------------------- | --------------------------------------------------------- |
+| FlatList (RN 0.86.2)    | Inverted · Normal + MVCP                                  |
+| FlashList v2 (2.3.2)    | Inverted · Normal + MVCP                                  |
+| Legend List v2 (2.0.19) | Inverted (scaleY -1) · alignItemsAtEnd                    |
+| Legend List v3 (3.3.6)  | getFixedItemSize · Inverted (scaleY -1) · alignItemsAtEnd |
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Legend List has no `inverted` prop, so it appears twice: once with its own
+bottom anchoring (`alignItemsAtEnd`), once with the classic manual inversion
+(`scaleY(-1)` on the list and back on every row).
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+The `getFixedItemSize` variant declares row heights instead of measuring them.
+The estimator in `src/chat/item-size.ts` derives a height per item type. Its
+constants are fitted to real `onLayout` heights, so it is accurate to about half
+a point per row, except for the images whose dimensions the corpus hides.
 
-## Get a fresh project
+## Debug settings
 
-When you're ready, run:
+The **Debug** button in the chat header opens the runtime settings:
+
+- **Page size** — how many messages each pagination step adds. Presets or any
+  value from 1 to 1000.
+- **Latency** — the artificial delay on every database read.
+- **Image placeholders** — off makes every image ignore its known size and grow
+  on load, which puts all image rows on the shifting path.
+- **recycleItems** — Legend List view recycling.
+- **Reseed corpus** — rebuild the database.
+
+The window grows without a cap. A jump discards the whole loaded array and
+starts again from the target message.
+
+## Run it
+
+Node 24 and Yarn 4 are required. `mise.toml` pins Node, and `package.json` pins
+Yarn through `packageManager`, so `corepack` picks the right version by itself.
+The install uses the `node-modules` linker, not Plug'n'Play.
 
 ```bash
-npm run reset-project
+node -v       # v24.x
+yarn install
+yarn ios      # or: yarn android
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+The app needs a development build, not Expo Go, because it uses native modules.
 
-### Other setup steps
+```bash
+yarn test           # pagination, generator, and estimator unit tests
+yarn format:check   # prettier
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Layout
 
-## Learn more
+| Path              | Holds                                                              |
+| ----------------- | ------------------------------------------------------------------ |
+| `src/engines/`    | One component per list library. All satisfy `ChatListProps`.       |
+| `src/chat/`       | Corpus generator, SQLite access, pagination window, row component. |
+| `src/screens/`    | Variant menu, chat screen, debug sheet, seeding screen.            |
+| `src/variants.ts` | The variant list the menu is built from.                           |
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+An engine receives ascending data, a `renderItem`, both edge callbacks and an
+opening index. It decides everything else itself. The differences between the
+libraries are the point, so nothing normalizes them away.
