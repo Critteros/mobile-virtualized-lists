@@ -1,7 +1,7 @@
 import type { Message } from './types.ts';
 
 export type WindowState = {
-  /** Bumped on every reset; used to key list remounts and discard stale loads. */
+  /** Bumped on every reset, which is how a jump discards stale loads. */
   generation: number;
   hasNewer: boolean;
   hasOlder: boolean;
@@ -19,9 +19,6 @@ export type WindowAction =
       type: 'loadEnd';
       edge: WindowEdge;
       page: Message[];
-      pageSize: number;
-      /** null means grow-only. */
-      trimCap: number | null;
       /** When present and stale, the action is discarded. */
       generation?: number;
     }
@@ -42,26 +39,6 @@ export const initialWindowState: WindowState = {
   loadingNewer: false,
   loadingOlder: false,
 };
-
-/**
- * Drops whole pages from one end until the window is at or under the cap.
- * Stops before the window would fall to a single page, so trimming can never
- * empty the list.
- */
-function trim(
-  items: Message[],
-  pageSize: number,
-  cap: number,
-  dropFrom: WindowEdge,
-): { dropped: boolean; items: Message[] } {
-  let next = items;
-  let dropped = false;
-  while (next.length > cap && next.length - pageSize >= pageSize) {
-    next = dropFrom === 'older' ? next.slice(pageSize) : next.slice(0, next.length - pageSize);
-    dropped = true;
-  }
-  return { dropped, items: next };
-}
 
 export function windowReducer(state: WindowState, action: WindowAction): WindowState {
   switch (action.type) {
@@ -96,30 +73,12 @@ export function windowReducer(state: WindowState, action: WindowAction): WindowS
         };
       }
 
-      const merged =
+      const items =
         action.edge === 'older'
           ? [...action.page, ...state.items]
           : [...state.items, ...action.page];
 
-      if (action.trimCap === null) {
-        return { ...state, ...loadingCleared, items: merged };
-      }
-
-      // Trim from the end opposite the one that just loaded.
-      const { dropped, items } = trim(
-        merged,
-        action.pageSize,
-        action.trimCap,
-        action.edge === 'older' ? 'newer' : 'older',
-      );
-
-      return {
-        ...state,
-        ...loadingCleared,
-        items,
-        ...(dropped && action.edge === 'older' ? { hasNewer: true } : null),
-        ...(dropped && action.edge === 'newer' ? { hasOlder: true } : null),
-      };
+      return { ...state, ...loadingCleared, items };
     }
 
     case 'append':

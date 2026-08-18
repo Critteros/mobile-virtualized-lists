@@ -1,15 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { Modal, TextInput, useColorScheme, View } from 'react-native';
 
+import { useDb } from '@/chat/DbProvider';
+import { useSettings } from '@/chat/settings';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Text } from '@/components/ui/text';
-import { useDb } from '@/chat/DbProvider';
-import { useSettings } from '@/chat/settings';
 
 const PAGE_SIZES = [20, 40, 80];
-const TRIM_CAPS: (number | null)[] = [null, 200, 300, 500];
 const LATENCIES = [0, 100, 250, 800];
 const INPUT_STYLE = {
   borderColor: 'rgba(120, 120, 128, 0.4)',
@@ -48,7 +47,8 @@ function Choice<T>({
           key={render(option)}
           size="sm"
           variant={option === value ? 'default' : 'outline'}
-          onPress={() => onSelect(option)}>
+          onPress={() => onSelect(option)}
+        >
           <Text>{render(option)}</Text>
         </Button>
       ))}
@@ -87,7 +87,8 @@ function PageSizeInput({
 }
 
 export function DebugSheet({ onClose, visible }: { onClose: () => void; visible: boolean }) {
-  const { settings, update } = useSettings();
+  const settings = useSettings();
+  const { update } = settings;
   const { reseedNow } = useDb();
 
   return (
@@ -111,21 +112,19 @@ export function DebugSheet({ onClose, visible }: { onClose: () => void; visible:
             />
           </Row>
 
-          <Row label="Trim cap">
-            <Choice
-              options={TRIM_CAPS}
-              value={settings.trimCap}
-              render={(n) => (n === null ? 'Grow only' : String(n))}
-              onSelect={(trimCap) => update({ trimCap })}
-            />
-          </Row>
-
           <Row label="Latency (ms)">
             <Choice
               options={LATENCIES}
               value={settings.latencyMs}
               render={(n) => String(n)}
               onSelect={(latencyMs) => update({ latencyMs })}
+            />
+          </Row>
+
+          <Row label="Image placeholders">
+            <Switch
+              checked={settings.imagePlaceholders}
+              onCheckedChange={(imagePlaceholders) => update({ imagePlaceholders })}
             />
           </Row>
 

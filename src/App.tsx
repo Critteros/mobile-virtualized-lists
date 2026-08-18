@@ -9,7 +9,6 @@ import './global.css';
 import { useEffect } from 'react';
 
 import { DbProvider, useDb } from '@/chat/DbProvider';
-import { SettingsProvider } from '@/chat/settings';
 import { NAV_THEME } from '@/lib/theme';
 import ChatScreen from '@/screens/ChatScreen';
 import HomeScreen from '@/screens/HomeScreen';
@@ -52,10 +51,8 @@ function Root() {
 export default function App() {
   return (
     <DbProvider>
-      <SettingsProvider>
-        <Root />
-        <PortalHost />
-      </SettingsProvider>
+      <Root />
+      <PortalHost />
     </DbProvider>
   );
 }

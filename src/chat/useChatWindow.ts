@@ -27,7 +27,7 @@ export type ChatWindow = {
 };
 
 export function useChatWindow(db: SQLiteDatabase | null): ChatWindow {
-  const { settings } = useSettings();
+  const pageSize = useSettings((s) => s.pageSize);
   const [state, dispatch] = useReducer(windowReducer, initialWindowState);
   const [targetIndex, setTargetIndex] = useState(0);
 
@@ -52,15 +52,13 @@ export function useChatWindow(db: SQLiteDatabase | null): ChatWindow {
       try {
         const page =
           edge === 'older'
-            ? await getPageBefore(db, items[0].id, settings.pageSize)
-            : await getPageAfter(db, items[items.length - 1].id, settings.pageSize);
+            ? await getPageBefore(db, items[0].id, pageSize)
+            : await getPageAfter(db, items[items.length - 1].id, pageSize);
 
         dispatch({
           type: 'loadEnd',
           edge,
           page,
-          pageSize: settings.pageSize,
-          trimCap: settings.trimCap,
           generation: requestGeneration,
         });
       } catch (error) {
@@ -70,15 +68,7 @@ export function useChatWindow(db: SQLiteDatabase | null): ChatWindow {
         inFlight.current[edge] = false;
       }
     },
-    [
-      db,
-      settings.pageSize,
-      settings.trimCap,
-      state.generation,
-      state.hasNewer,
-      state.hasOlder,
-      state.items,
-    ],
+    [db, pageSize, state.generation, state.hasNewer, state.hasOlder, state.items],
   );
 
   const loadOlder = useCallback(() => {
@@ -96,14 +86,14 @@ export function useChatWindow(db: SQLiteDatabase | null): ChatWindow {
       inFlight.current.older = false;
 
       if (target === 'start') {
-        const items = await getFirstPage(db, settings.pageSize);
+        const items = await getFirstPage(db, pageSize);
         dispatch({ type: 'reset', items, hasOlder: false, hasNewer: true });
         setTargetIndex(0);
         return;
       }
 
       if (target === 'latest') {
-        const items = await getLatestPage(db, settings.pageSize);
+        const items = await getLatestPage(db, pageSize);
         dispatch({ type: 'reset', items, hasOlder: true, hasNewer: false });
         setTargetIndex(Math.max(0, items.length - 1));
         return;
@@ -111,11 +101,11 @@ export function useChatWindow(db: SQLiteDatabase | null): ChatWindow {
 
       const middleId = await getMiddleId(db);
       if (!middleId) return;
-      const items = await getAround(db, middleId, settings.pageSize);
+      const items = await getAround(db, middleId, pageSize);
       dispatch({ type: 'reset', items, hasOlder: true, hasNewer: true });
       setTargetIndex(items.findIndex((m) => m.id === middleId));
     },
-    [db, settings.pageSize],
+    [db, pageSize],
   );
 
   const sendMessage = useCallback(
@@ -134,7 +124,7 @@ export function useChatWindow(db: SQLiteDatabase | null): ChatWindow {
     (async () => {
       const { count } = await getBounds(db);
       if (cancelled || count === 0) return;
-      const items = await getLatestPage(db, settings.pageSize);
+      const items = await getLatestPage(db, pageSize);
       if (cancelled) return;
       dispatch({ type: 'reset', items, hasOlder: true, hasNewer: false });
       setTargetIndex(Math.max(0, items.length - 1));

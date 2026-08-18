@@ -7,6 +7,7 @@ import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 
 import { isDayBoundary } from './day-boundary';
+import { useSettings } from './settings';
 import type { Message } from './types';
 import { useVideo } from './VideoProvider';
 
@@ -17,11 +18,16 @@ const PLACEHOLDER_COLOR = 'rgba(120, 120, 128, 0.16)';
 function ImageBubble({ message }: { message: Message }) {
   // Half the image rows arrive with unknown dimensions. Those start at a
   // placeholder height and grow when the image reports its real size — the
-  // post-load height change every engine has to absorb.
-  const known = message.mediaW !== null && message.mediaH !== null;
-  const [ratio, setRatio] = useState<number | null>(
-    known ? message.mediaW! / message.mediaH! : null,
-  );
+  // post-load height change every engine has to absorb. Turning the setting
+  // off puts every image on that path.
+  const imagePlaceholders = useSettings((s) => s.imagePlaceholders);
+  // Keyed by id: a recycled row would otherwise keep the previous image's
+  // ratio until the new one loads.
+  const [loaded, setLoaded] = useState<{ id: string; ratio: number } | null>(null);
+  const loadedRatio = loaded?.id === message.id ? loaded.ratio : null;
+  const knownRatio =
+    message.mediaW !== null && message.mediaH !== null ? message.mediaW / message.mediaH : null;
+  const ratio = imagePlaceholders ? (knownRatio ?? loadedRatio) : loadedRatio;
 
   return (
     <Image
@@ -29,9 +35,9 @@ function ImageBubble({ message }: { message: Message }) {
       recyclingKey={message.id}
       contentFit="cover"
       transition={100}
-      onLoad={(event) => {
-        if (ratio === null) setRatio(event.source.width / event.source.height);
-      }}
+      onLoad={(event) =>
+        setLoaded({ id: message.id, ratio: event.source.width / event.source.height })
+      }
       style={{
         width: BUBBLE_WIDTH,
         height: ratio === null ? 80 : BUBBLE_WIDTH / ratio,

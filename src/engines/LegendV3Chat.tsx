@@ -23,7 +23,7 @@ export function LegendV3Chat({
   ref,
 }: ChatListProps) {
   const listRef = useRef<LegendListRef>(null);
-  const { settings } = useSettings();
+  const recycleItems = useSettings((s) => s.recycleItems);
   const data = useMemo(() => (inverted ? [...items].reverse() : items), [inverted, items]);
   const toListIndex = (ascendingIndex: number) =>
     inverted ? items.length - 1 - ascendingIndex : ascendingIndex;
@@ -77,7 +77,7 @@ export function LegendV3Chat({
       // of every page that loads.
       maintainScrollAtEnd={!inverted && !hasNewer}
       maintainVisibleContentPosition
-      recycleItems={settings.recycleItems}
+      recycleItems={recycleItems}
       // No estimatedItemSize on purpose: its own measurement path is what we
       // want to observe.
       onStartReached={inverted ? onNewerNeeded : onOlderNeeded}
