@@ -5,6 +5,7 @@ export type VariantKey =
   | 'flashlist-v2-normal'
   | 'flatlist-inverted'
   | 'flatlist-normal'
+  | 'legend-v2-inverted'
   | 'legend-v2-normal'
   | 'legend-v3-inverted'
   | 'legend-v3-normal';
@@ -48,6 +49,14 @@ export const VARIANTS: Variant[] = [
     group: 'FlashList v2 (2.3.2)',
     inverted: false,
     title: 'Normal + MVCP',
+  },
+  {
+    key: 'legend-v2-inverted',
+    engine: 'legend-v2',
+    group: 'Legend List v2 (2.0.19)',
+    inverted: true,
+    note: 'Manual inversion: scaleY(-1) on the list and on every row.',
+    title: 'Inverted (scaleY -1)',
   },
   {
     key: 'legend-v2-normal',
