@@ -56,12 +56,6 @@ export function FlatListChat({
   // growing for several frames after the first layout. A one-shot scroll lands
   // short. Instead the list re-pins on every content-size change until the user
   // takes over, which the first drag reports.
-  // maintainVisibleContentPosition anchors on a visible row and shifts the
-  // offset whenever content is inserted above it. During the first frames that
-  // is exactly what happens as rows 0..n-1 render in, so it cancels the opening
-  // scroll. MVCP is therefore withheld until the list has finished settling on
-  // its opening position — after that it does its real job of holding the
-  // viewport still when an older page is prepended.
   const [pinned, setPinned] = useState(inverted);
   const userHasScrolled = useRef(false);
   const onScrollBeginDrag = useCallback(() => {
@@ -160,9 +154,7 @@ export function FlatListChat({
       // Needed on both orientations: whichever edge maps to a raw-array
       // front-insert (older when non-inverted, newer when inverted — see the
       // edge-swap comment above) shoves the viewport without this anchor.
-      // Withheld until the opening scroll has settled (see `pinned` above);
-      // inverted starts pinned, so this is effectively always on for it.
-      maintainVisibleContentPosition={!pinned ? undefined : { minIndexForVisible: 1 }}
+      maintainVisibleContentPosition={{ minIndexForVisible: 1 }}
       onScrollToIndexFailed={({ index }) => {
         // The retry MUST carry viewPosition too — without it the target snaps
         // back to the top of the viewport, undoing the opening position.
