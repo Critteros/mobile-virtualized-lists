@@ -2,6 +2,7 @@ import { useImperativeHandle, useMemo, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 
+import { messageItemType } from '@/chat/item-type';
 import type { ChatListHandle, ChatListProps, Message } from '@/chat/types';
 
 const POSITION = { bottom: 1, center: 0.5, top: 0 } as const;
@@ -54,6 +55,7 @@ export function FlashV2Chat({
       data={data}
       inverted={inverted}
       keyExtractor={(item) => item.id}
+      getItemType={messageItemType}
       renderItem={({ item, index }) =>
         renderItem(item, inverted ? items.length - 1 - index : index)
       }

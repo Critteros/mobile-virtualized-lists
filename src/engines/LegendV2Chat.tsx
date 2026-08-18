@@ -2,6 +2,7 @@ import { useImperativeHandle, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { LegendList, type LegendListRef } from 'legend-list-v2';
 
+import { messageItemType } from '@/chat/item-type';
 import { useSettings } from '@/chat/settings';
 import type { ChatListHandle, ChatListProps } from '@/chat/types';
 
@@ -40,6 +41,7 @@ export function LegendV2Chat({
       ref={listRef}
       data={items}
       keyExtractor={(item) => item.id}
+      getItemType={messageItemType}
       renderItem={({ item, index }) => renderItem(item, index)}
       initialScrollIndex={initialScrollIndex}
       // No `inverted` prop in v2 either. Bottom anchoring is these two props.
