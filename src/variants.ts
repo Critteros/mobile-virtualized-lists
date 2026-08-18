@@ -1,8 +1,4 @@
-export type EngineKey =
-  | 'flashlist-v2'
-  | 'flatlist'
-  | 'legend-v2'
-  | 'legend-v3';
+export type EngineKey = 'flashlist-v2' | 'flatlist' | 'legend-v2' | 'legend-v3';
 
 export type VariantKey =
   | 'flashlist-v2-inverted'
@@ -10,6 +6,7 @@ export type VariantKey =
   | 'flatlist-inverted'
   | 'flatlist-normal'
   | 'legend-v2-normal'
+  | 'legend-v3-inverted'
   | 'legend-v3-normal';
 
 export type Variant = {
@@ -59,6 +56,14 @@ export const VARIANTS: Variant[] = [
     inverted: false,
     note: 'No inverted prop — bottom anchoring via alignItemsAtEnd.',
     title: 'alignItemsAtEnd',
+  },
+  {
+    key: 'legend-v3-inverted',
+    engine: 'legend-v3',
+    group: 'Legend List v3 (3.3.6)',
+    inverted: true,
+    note: 'Manual inversion: scaleY(-1) on the list and on every row.',
+    title: 'Inverted (scaleY -1)',
   },
   {
     key: 'legend-v3-normal',
