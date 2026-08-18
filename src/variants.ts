@@ -1,13 +1,10 @@
 export type EngineKey =
-  | 'flashlist-v1'
   | 'flashlist-v2'
   | 'flatlist'
   | 'legend-v2'
   | 'legend-v3';
 
 export type VariantKey =
-  | 'flashlist-v1-inverted'
-  | 'flashlist-v1-normal'
   | 'flashlist-v2-inverted'
   | 'flashlist-v2-normal'
   | 'flatlist-inverted'
@@ -40,22 +37,6 @@ export const VARIANTS: Variant[] = [
     group: 'FlatList (RN 0.86.2)',
     inverted: false,
     title: 'Normal + MVCP',
-  },
-  {
-    key: 'flashlist-v1-inverted',
-    engine: 'flashlist-v1',
-    group: 'FlashList v1 (1.8.3)',
-    inverted: true,
-    note: 'No onStartReached (onScroll shim). No maintainVisibleContentPosition.',
-    title: 'Inverted',
-  },
-  {
-    key: 'flashlist-v1-normal',
-    engine: 'flashlist-v1',
-    group: 'FlashList v1 (1.8.3)',
-    inverted: false,
-    note: 'No onStartReached (onScroll shim). No MVCP — prepends will jump.',
-    title: 'Normal',
   },
   {
     key: 'flashlist-v2-inverted',

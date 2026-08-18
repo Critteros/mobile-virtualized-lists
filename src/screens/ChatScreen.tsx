@@ -11,7 +11,6 @@ import type { ChatListHandle, ChatListProps, Message } from '@/chat/types';
 import { useChatWindow } from '@/chat/useChatWindow';
 import { useDb } from '@/chat/DbProvider';
 import { VideoProvider } from '@/chat/VideoProvider';
-import { FlashV1Chat } from '@/engines/FlashV1Chat';
 import { FlashV2Chat } from '@/engines/FlashV2Chat';
 import { FlatListChat } from '@/engines/FlatListChat';
 import { LegendV2Chat } from '@/engines/LegendV2Chat';
@@ -23,7 +22,6 @@ export type ChatScreenProps = StaticScreenProps<{ variant: VariantKey }>;
 
 const ENGINES: Partial<Record<EngineKey, (props: ChatListProps) => ReactElement>> = {
   flatlist: FlatListChat,
-  'flashlist-v1': FlashV1Chat,
   'flashlist-v2': FlashV2Chat,
   'legend-v2': LegendV2Chat,
   'legend-v3': LegendV3Chat,
