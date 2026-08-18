@@ -128,7 +128,6 @@ export function useChatWindow(db: SQLiteDatabase | null): ChatWindow {
     [db, state.hasNewer],
   );
 
-  // Open at the bottom of the channel.
   useEffect(() => {
     if (!db) return;
     let cancelled = false;

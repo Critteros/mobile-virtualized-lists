@@ -119,7 +119,6 @@ export function* generateCorpusIter(count: number, seed: number): Generator<Mess
   }
 }
 
-/** Convenience wrapper for tests and small corpora. */
 export function generateCorpus(count = MESSAGE_COUNT, seed = SEED): Message[] {
   return [...generateCorpusIter(count, seed)];
 }
