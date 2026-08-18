@@ -7,6 +7,7 @@ export type VariantKey =
   | 'flatlist-normal'
   | 'legend-v2-inverted'
   | 'legend-v2-normal'
+  | 'legend-v3-fixed'
   | 'legend-v3-inverted'
   | 'legend-v3-normal';
 
@@ -16,6 +17,8 @@ export type Variant = {
   group: string;
   inverted: boolean;
   key: VariantKey;
+  /** Row heights are declared through getFixedItemSize, never measured. */
+  fixedSize?: boolean;
   /** Shown in the chat header when the engine has a relevant limitation. */
   note?: string;
   title: string;
@@ -65,6 +68,15 @@ export const VARIANTS: Variant[] = [
     inverted: false,
     note: 'No inverted prop — bottom anchoring via alignItemsAtEnd.',
     title: 'alignItemsAtEnd',
+  },
+  {
+    key: 'legend-v3-fixed',
+    engine: 'legend-v3',
+    fixedSize: true,
+    group: 'Legend List v3 (3.3.6)',
+    inverted: false,
+    note: 'Heights come from getFixedItemSize per item type, not from measurement.',
+    title: 'getFixedItemSize',
   },
   {
     key: 'legend-v3-inverted',

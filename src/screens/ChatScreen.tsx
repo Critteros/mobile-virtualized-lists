@@ -1,21 +1,22 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { StaticScreenProps } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Text } from '@/components/ui/text';
+import { useDb } from '@/chat/DbProvider';
 import { MessageRow } from '@/chat/MessageRow';
 import type { ChatListHandle, ChatListProps, Message } from '@/chat/types';
 import { useChatWindow } from '@/chat/useChatWindow';
-import { useDb } from '@/chat/DbProvider';
 import { VideoProvider } from '@/chat/VideoProvider';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Text } from '@/components/ui/text';
 import { FlashV2Chat } from '@/engines/FlashV2Chat';
 import { FlatListChat } from '@/engines/FlatListChat';
 import { LegendV2Chat } from '@/engines/LegendV2Chat';
 import { LegendV3Chat } from '@/engines/LegendV3Chat';
 import { getVariant, type EngineKey, type VariantKey } from '@/variants';
+
 import { DebugSheet } from './DebugSheet';
 
 export type ChatScreenProps = StaticScreenProps<{ variant: VariantKey }>;
@@ -72,7 +73,11 @@ function ChatScreenBody({ route }: ChatScreenProps) {
           <Text variant="small">
             {variant.group} — {variant.title}
           </Text>
-          {variant.note ? <Text variant="muted" className="text-xs">{variant.note}</Text> : null}
+          {variant.note ? (
+            <Text variant="muted" className="text-xs">
+              {variant.note}
+            </Text>
+          ) : null}
         </View>
         <Button size="sm" variant="ghost" onPress={() => setSheetOpen(true)}>
           <Text>Debug</Text>
@@ -82,7 +87,9 @@ function ChatScreenBody({ route }: ChatScreenProps) {
       <View className="flex-row gap-2 border-b border-border px-3 py-2">
         {(['start', 'middle', 'latest'] as const).map((target) => (
           <Button key={target} size="sm" variant="secondary" onPress={() => jumpTo(target)}>
-            <Text>{target === 'start' ? 'Channel start' : target === 'middle' ? 'Middle' : 'Latest'}</Text>
+            <Text>
+              {target === 'start' ? 'Channel start' : target === 'middle' ? 'Middle' : 'Latest'}
+            </Text>
           </Button>
         ))}
       </View>
@@ -107,6 +114,7 @@ function ChatScreenBody({ route }: ChatScreenProps) {
           hasNewer={state.hasNewer}
           initialScrollIndex={targetIndex}
           inverted={variant.inverted}
+          fixedSize={variant.fixedSize}
         />
       )}
 

@@ -1,7 +1,8 @@
 import { useImperativeHandle, useMemo, useRef } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, useWindowDimensions, View } from 'react-native';
 import { LegendList, type LegendListRef } from '@legendapp/list/react-native';
 
+import { estimateRowHeight } from '@/chat/item-size';
 import { messageItemType } from '@/chat/item-type';
 import { useSettings } from '@/chat/settings';
 import type { ChatListHandle, ChatListProps } from '@/chat/types';
@@ -20,10 +21,12 @@ export function LegendV3Chat({
   hasNewer,
   initialScrollIndex,
   inverted = false,
+  fixedSize = false,
   ref,
 }: ChatListProps) {
   const listRef = useRef<LegendListRef>(null);
   const recycleItems = useSettings((s) => s.recycleItems);
+  const { width } = useWindowDimensions();
   const data = useMemo(() => (inverted ? [...items].reverse() : items), [inverted, items]);
   const toListIndex = (ascendingIndex: number) =>
     inverted ? items.length - 1 - ascendingIndex : ascendingIndex;
@@ -61,6 +64,14 @@ export function LegendV3Chat({
       style={inverted ? FLIP : undefined}
       keyExtractor={(item) => item.id}
       getItemType={messageItemType}
+      getFixedItemSize={
+        fixedSize
+          ? (_item, index) => {
+              const ascending = inverted ? items.length - 1 - index : index;
+              return estimateRowHeight(items[ascending], items[ascending - 1] ?? null, width);
+            }
+          : undefined
+      }
       renderItem={({ item, index }) => {
         const row = renderItem(item, inverted ? items.length - 1 - index : index);
         return inverted ? <View style={FLIP}>{row}</View> : row;

@@ -47,5 +47,7 @@ export type ChatListProps = {
   /** Ascending index to open at. */
   initialScrollIndex?: number;
   inverted?: boolean;
+  /** Declare row heights instead of letting the list measure them. */
+  fixedSize?: boolean;
   ref?: Ref<ChatListHandle>;
 };
