@@ -157,11 +157,12 @@ export function FlatListChat({
       onStartReachedThreshold={0.5}
       ListHeaderComponent={<Spinner visible={inverted ? loadingNewer : loadingOlder} />}
       ListFooterComponent={<Spinner visible={inverted ? loadingOlder : loadingNewer} />}
-      // Non-inverted lists need an anchor so prepending older pages does not
-      // shove the viewport down.
-      maintainVisibleContentPosition={
-        inverted || !pinned ? undefined : { minIndexForVisible: 1 }
-      }
+      // Needed on both orientations: whichever edge maps to a raw-array
+      // front-insert (older when non-inverted, newer when inverted — see the
+      // edge-swap comment above) shoves the viewport without this anchor.
+      // Withheld until the opening scroll has settled (see `pinned` above);
+      // inverted starts pinned, so this is effectively always on for it.
+      maintainVisibleContentPosition={!pinned ? undefined : { minIndexForVisible: 1 }}
       onScrollToIndexFailed={({ index }) => {
         // The retry MUST carry viewPosition too — without it the target snaps
         // back to the top of the viewport, undoing the opening position.

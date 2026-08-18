@@ -66,8 +66,10 @@ export function FlashV2Chat({
       onStartReachedThreshold={0.5}
       ListHeaderComponent={<Spinner visible={inverted ? loadingNewer : loadingOlder} />}
       ListFooterComponent={<Spinner visible={inverted ? loadingOlder : loadingNewer} />}
-      // v2 has MVCP built in; only the non-inverted variant needs it configured.
-      maintainVisibleContentPosition={inverted ? undefined : { startRenderingFromBottom: false }}
+      // v2 has MVCP enabled by default for both orientations; the
+      // startRenderingFromBottom tweak only matters for the non-inverted
+      // variant's initial render.
+      maintainVisibleContentPosition={inverted ? {} : { startRenderingFromBottom: false }}
     />
   );
 }
