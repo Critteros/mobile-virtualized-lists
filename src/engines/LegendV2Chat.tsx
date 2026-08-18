@@ -14,6 +14,7 @@ export function LegendV2Chat({
   onNewerNeeded,
   loadingOlder,
   loadingNewer,
+  hasNewer,
   initialScrollIndex,
   ref,
 }: ChatListProps) {
@@ -43,7 +44,10 @@ export function LegendV2Chat({
       initialScrollIndex={initialScrollIndex}
       // No `inverted` prop in v2 either. Bottom anchoring is these two props.
       alignItemsAtEnd
-      maintainScrollAtEnd
+      // Sticking to the end is only wanted at the live tail. While older pages
+      // still have newer ones after them, it would drag the viewport to the end
+      // of every page that loads.
+      maintainScrollAtEnd={!hasNewer}
       maintainVisibleContentPosition
       recycleItems={settings.recycleItems}
       // No estimatedItemSize on purpose.

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { MessageRow } from '@/chat/MessageRow';
-import { useSettings } from '@/chat/settings';
 import type { ChatListHandle, ChatListProps, Message } from '@/chat/types';
 import { useChatWindow } from '@/chat/useChatWindow';
 import { useDb } from '@/chat/DbProvider';
@@ -34,7 +33,6 @@ function ChatScreenBody({ route }: ChatScreenProps) {
   const variant = getVariant(route.params.variant);
   const { db } = useDb();
   const { state, loadOlder, loadNewer, jumpTo, sendMessage, targetIndex } = useChatWindow(db);
-  const { settings } = useSettings();
   const listRef = useRef<ChatListHandle>(null);
   const insets = useSafeAreaInsets();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -53,15 +51,16 @@ function ChatScreenBody({ route }: ChatScreenProps) {
   // top of an empty list and never correct itself, so the engine waits.
   const windowReady = state.items.length > 0;
 
-  // Remount mode: keying on generation forces the engine to rebuild and honour
-  // initialScrollIndex. Imperative mode: the list stays mounted, the data is
-  // swapped wholesale, and we ask it to scroll — no safety net, which is the
-  // point.
+  // A jump swaps the window in place and scrolls. Guarding on the generation
+  // keeps later page loads, which also change items.length, from scrolling the
+  // list back to the jump target.
+  const scrolledGeneration = useRef(0);
   useEffect(() => {
-    if (settings.jumpMode !== 'imperative') return;
     if (state.items.length === 0) return;
+    if (scrolledGeneration.current === state.generation) return;
+    scrolledGeneration.current = state.generation;
     listRef.current?.scrollToIndex(targetIndex, 'center');
-  }, [settings.jumpMode, state.generation, state.items.length, targetIndex]);
+  }, [state.generation, state.items.length, targetIndex]);
 
   const submit = () => {
     sendMessage(draft);
@@ -100,7 +99,6 @@ function ChatScreenBody({ route }: ChatScreenProps) {
         </View>
       ) : (
         <Engine
-          key={settings.jumpMode === 'remount' ? state.generation : 'stable'}
           ref={listRef}
           items={state.items}
           renderItem={renderItem}
@@ -108,7 +106,8 @@ function ChatScreenBody({ route }: ChatScreenProps) {
           onNewerNeeded={loadNewer}
           loadingOlder={state.loadingOlder}
           loadingNewer={state.loadingNewer}
-          initialScrollIndex={settings.jumpMode === 'remount' ? targetIndex : undefined}
+          hasNewer={state.hasNewer}
+          initialScrollIndex={targetIndex}
           inverted={variant.inverted}
         />
       )}

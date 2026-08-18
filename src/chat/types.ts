@@ -42,6 +42,8 @@ export type ChatListProps = {
   onNewerNeeded: () => void;
   loadingOlder: boolean;
   loadingNewer: boolean;
+  /** False once the window reaches the newest message in the corpus. */
+  hasNewer: boolean;
   /** Ascending index to open at. */
   initialScrollIndex?: number;
   inverted?: boolean;

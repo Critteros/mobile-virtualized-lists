@@ -1,5 +1,5 @@
-import { type ReactNode } from 'react';
-import { Modal, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Modal, TextInput, useColorScheme, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -11,6 +11,15 @@ import { useSettings } from '@/chat/settings';
 const PAGE_SIZES = [20, 40, 80];
 const TRIM_CAPS: (number | null)[] = [null, 200, 300, 500];
 const LATENCIES = [0, 100, 250, 800];
+const INPUT_STYLE = {
+  borderColor: 'rgba(120, 120, 128, 0.4)',
+  borderRadius: 6,
+  borderWidth: 1,
+  height: 32,
+  paddingHorizontal: 8,
+  textAlign: 'center',
+  width: 72,
+} as const;
 
 function Row({ children, label }: { children: ReactNode; label: string }) {
   return (
@@ -47,6 +56,36 @@ function Choice<T>({
   );
 }
 
+function PageSizeInput({
+  onCommit,
+  value,
+}: {
+  onCommit: (pageSize: number) => void;
+  value: number;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  const scheme = useColorScheme();
+
+  const commit = () => {
+    const parsed = Number.parseInt(draft, 10);
+    const next = Number.isFinite(parsed) ? Math.min(1000, Math.max(1, parsed)) : value;
+    setDraft(String(next));
+    onCommit(next);
+  };
+
+  return (
+    <TextInput
+      style={[INPUT_STYLE, { color: scheme === 'dark' ? 'white' : 'black' }]}
+      keyboardType="number-pad"
+      returnKeyType="done"
+      value={draft}
+      onChangeText={setDraft}
+      onBlur={commit}
+      onSubmitEditing={commit}
+    />
+  );
+}
+
 export function DebugSheet({ onClose, visible }: { onClose: () => void; visible: boolean }) {
   const { settings, update } = useSettings();
   const { reseedNow } = useDb();
@@ -65,6 +104,11 @@ export function DebugSheet({ onClose, visible }: { onClose: () => void; visible:
               render={(n) => String(n)}
               onSelect={(pageSize) => update({ pageSize })}
             />
+            <PageSizeInput
+              key={settings.pageSize}
+              value={settings.pageSize}
+              onCommit={(pageSize) => update({ pageSize })}
+            />
           </Row>
 
           <Row label="Trim cap">
@@ -82,15 +126,6 @@ export function DebugSheet({ onClose, visible }: { onClose: () => void; visible:
               value={settings.latencyMs}
               render={(n) => String(n)}
               onSelect={(latencyMs) => update({ latencyMs })}
-            />
-          </Row>
-
-          <Row label="Jump mode">
-            <Choice
-              options={['remount', 'imperative'] as const}
-              value={settings.jumpMode}
-              render={(m) => m}
-              onSelect={(jumpMode) => update({ jumpMode })}
             />
           </Row>
 

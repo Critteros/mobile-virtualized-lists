@@ -12,6 +12,7 @@ import { useVideo } from './VideoProvider';
 
 const AUTHOR_NAMES = ['Me', 'Ada', 'Grace', 'Alan'];
 const BUBBLE_WIDTH = 240;
+const PLACEHOLDER_COLOR = 'rgba(120, 120, 128, 0.16)';
 
 function ImageBubble({ message }: { message: Message }) {
   // Half the image rows arrive with unknown dimensions. Those start at a
@@ -35,6 +36,7 @@ function ImageBubble({ message }: { message: Message }) {
         width: BUBBLE_WIDTH,
         height: ratio === null ? 80 : BUBBLE_WIDTH / ratio,
         borderRadius: 12,
+        backgroundColor: PLACEHOLDER_COLOR,
       }}
     />
   );
@@ -62,7 +64,12 @@ function VideoBubble({ message }: { message: Message }) {
         source={{ uri: message.posterUrl! }}
         recyclingKey={message.id}
         contentFit="cover"
-        style={{ width: BUBBLE_WIDTH, height, borderRadius: 12 }}
+        style={{
+          width: BUBBLE_WIDTH,
+          height,
+          borderRadius: 12,
+          backgroundColor: PLACEHOLDER_COLOR,
+        }}
       />
       <View className="absolute inset-0 items-center justify-center">
         <View className="h-12 w-12 items-center justify-center rounded-full bg-black/60">

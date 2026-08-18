@@ -2,11 +2,7 @@ import { createContext, use, useCallback, useMemo, useState, type ReactNode } fr
 
 import { setLatency } from './db';
 
-export type JumpMode = 'imperative' | 'remount';
-
 export type ChatSettings = {
-  /** Remount keys the list on `generation`; imperative replaces data and scrolls. */
-  jumpMode: JumpMode;
   latencyMs: number;
   pageSize: number;
   /** Legend List only. */
@@ -16,7 +12,6 @@ export type ChatSettings = {
 };
 
 export const DEFAULT_SETTINGS: ChatSettings = {
-  jumpMode: 'remount',
   latencyMs: 250,
   pageSize: 40,
   recycleItems: true,
