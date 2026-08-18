@@ -48,3 +48,11 @@ example
 # generated native folders
 /ios
 /android
+
+.agents
+.cursor
+.gemini
+.kiro
+.opencode
+.codex
+.claude
